@@ -1,4 +1,5 @@
 import os
+import sys
 import cv2
 import numpy as np
 import base64
@@ -6,53 +7,67 @@ from flask import Flask, render_template, Response, request, jsonify
 from flask_socketio import SocketIO, emit
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
+# Note: Render uses 'tensorflow-cpu' but imports as 'tensorflow'
 from tensorflow.keras.models import load_model
 
-# --- 1. CONFIGURATION ---
+# --- 1. CONFIGURATION (UNIVERSAL PATHS) ---
 
-# Initialize Flask with explicit folder paths
-app = Flask(__name__, template_folder='templates', static_folder='static')
-
-# Fix Database URI for consistent access on all operating systems
+# Get the folder where THIS main.py file is running
+# On Render, this will automatically be /opt/render/project/src/backend
 basedir = os.path.abspath(os.path.dirname(__file__))
-# Ensure the instance folder exists
+
+template_dir = os.path.join(basedir, 'templates')
+static_dir = os.path.join(basedir, 'static')
 instance_path = os.path.join(basedir, 'instance')
+
+print(f"--> Main.py running from: {basedir}")
+print(f"--> Templates expected at: {template_dir}")
+
+# Initialize Flask with explicit paths
+app = Flask(__name__, 
+            template_folder=template_dir, 
+            static_folder=static_dir)
+
+# Database Setup
 if not os.path.exists(instance_path):
     os.makedirs(instance_path)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(instance_path, 'database.db')
-app.config['SECRET_KEY'] = 'your_secret_key_here' # Change this in production!
+app.config['SECRET_KEY'] = 'your_secret_key_here' 
 
-# Initialize Extensions
+# --- 2. EXTENSIONS ---
 db = SQLAlchemy(app)
 socketio = SocketIO(app, cors_allowed_origins="*")
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 
-# Load the AI Model
-# Ensure the model file is in the same directory as main.py
+# --- 3. LOAD MODEL ---
 model_path = os.path.join(basedir, 'asl_model_az.h5')
+model = None
 try:
-    model = load_model(model_path)
-    print("✅ Model loaded successfully!")
+    if os.path.exists(model_path):
+        model = load_model(model_path)
+        print("✅ Model loaded successfully!")
+    else:
+        print(f"❌ Model not found at: {model_path}")
 except Exception as e:
     print(f"❌ Error loading model: {e}")
-    # We don't exit, so the app can still run (just without prediction)
 
-labels = {i: chr(65 + i) for i in range(26)}  # A-Z map
+labels = {i: chr(65 + i) for i in range(26)}
 
-# --- 2. DATABASE MODELS ---
+# --- 4. DATABASE MODELS ---
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(150), unique=True, nullable=False)
+    email = db.Column(db.String(150), unique=True, nullable=False) # Email is required now
     password = db.Column(db.String(150), nullable=False)
     full_name = db.Column(db.String(150))
 
 class History(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    mode = db.Column(db.String(50))  # 'Sign-to-Text' or 'Text-to-Sign'
+    mode = db.Column(db.String(50))
     content = db.Column(db.Text)
     timestamp = db.Column(db.DateTime, default=db.func.current_timestamp())
 
@@ -60,8 +75,12 @@ class History(db.Model):
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-# --- 3. ROUTES ---
+# --- FORCE TABLE CREATION ---
+with app.app_context():
+    db.create_all()
+    print("--> Database tables checked/created.")
 
+# --- 5. ROUTES ---
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -81,8 +100,13 @@ def signup():
     if User.query.filter_by(username=data.get('username')).first():
         return jsonify({"success": False, "message": "Username already exists"})
     
+    # Check for email too
+    if User.query.filter_by(email=data.get('email')).first():
+        return jsonify({"success": False, "message": "Email already exists"})
+        
     new_user = User(
         username=data.get('username'),
+        email=data.get('email'),
         password=data.get('password'),
         full_name=data.get('full_name')
     )
@@ -101,11 +125,7 @@ def logout():
 @login_required
 def save_history():
     data = request.json
-    new_entry = History(
-        user_id=current_user.id,
-        mode=data['mode'],
-        content=data['content']
-    )
+    new_entry = History(user_id=current_user.id, mode=data['mode'], content=data['content'])
     db.session.add(new_entry)
     db.session.commit()
     return jsonify({"success": True})
@@ -114,47 +134,30 @@ def save_history():
 @login_required
 def get_history():
     history = History.query.filter_by(user_id=current_user.id).order_by(History.timestamp.desc()).all()
-    history_data = [
-        {"date": h.timestamp.strftime('%Y-%m-%d %H:%M'), "mode": h.mode, "content": h.content}
-        for h in history
-    ]
+    history_data = [{"date": h.timestamp.strftime('%Y-%m-%d %H:%M'), "mode": h.mode, "content": h.content} for h in history]
     return jsonify(history_data)
 
-# --- 4. SOCKET IO (VIDEO PROCESSING) ---
-
+# --- 6. SOCKET IO ---
 @socketio.on('image_frame')
 def handle_image(data):
-    # Decode image
-    image_data = base64.b64decode(data.split(',')[1])
-    nparr = np.frombuffer(image_data, np.uint8)
-    frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-
-    if frame is None:
-        return
-
-    # Preprocess for Model (Resize to 64x64)
+    if not model: return
     try:
+        image_data = base64.b64decode(data.split(',')[1])
+        nparr = np.frombuffer(image_data, np.uint8)
+        frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        if frame is None: return
+
         resized = cv2.resize(frame, (64, 64))
         normalized = resized / 255.0
         reshaped = np.reshape(normalized, (1, 64, 64, 3))
-
-        # Prediction
         prediction = model.predict(reshaped, verbose=0)
         predicted_index = np.argmax(prediction)
         confidence = float(np.max(prediction))
         predicted_char = labels[predicted_index]
 
-        # Send result back
-        emit('prediction_result', {
-            'char': predicted_char, 
-            'confidence': confidence
-        })
-    except Exception as e:
-        print(f"Prediction Error: {e}")
+        emit('prediction_result', {'char': predicted_char, 'confidence': confidence})
+    except Exception:
+        pass
 
-# --- 5. MAIN ENTRY POINT ---
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()  # Create tables if they don't exist
-    # Debug=True is fine for local, but Gunicorn will override this on Render
     socketio.run(app, debug=True, host='0.0.0.0', port=5000)
