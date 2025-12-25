@@ -16,7 +16,7 @@ from tensorflow.keras.models import load_model
 # On Render, this will automatically be /opt/render/project/src/backend
 basedir = os.path.abspath(os.path.dirname(__file__))
 
-template_dir = os.path.join(basedir, 'templates')
+template_dir = os.path.join(basedir, 'template')
 static_dir = os.path.join(basedir, 'static')
 instance_path = os.path.join(basedir, 'instance')
 
@@ -161,3 +161,4 @@ def handle_image(data):
 
 if __name__ == '__main__':
     socketio.run(app, debug=True, host='0.0.0.0', port=5000)
+
