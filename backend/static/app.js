@@ -98,7 +98,7 @@ document.getElementById('btn-visual-play').onclick = async () => {
     for (let char of text) {
         displayLetter.innerText = char;
         // UPDATED: Correct path for static files
-        displayImg.src = `/static/images/${char}.png`;
+        displayImg.src = `/static/images/${char.tolowerCase()}.png`;
         await new Promise(r => setTimeout(r, 800)); // Wait 800ms per letter
     }
     displayLetter.innerText = "Done";
@@ -111,7 +111,7 @@ for (let letter of alphabet) {
     let div = document.createElement('div');
     div.className = 'grid-item';
     div.innerHTML = `
-        <img src="/static/images/${letter}.png" alt="${letter}">
+        <img src="/static/images/${letter.tolowerCase()}.png" alt="${letter}">
         <span class="fw-bold small text-muted">${letter}</span>
     `;
     div.onclick = () => {
@@ -176,3 +176,4 @@ document.getElementById('btn-view-history').onclick = async () => {
         tbody.innerHTML += `<tr><td>${row.date}</td><td>${row.mode}</td><td>${row.content}</td></tr>`;
     });
 };
+
