@@ -17,6 +17,8 @@ from sqlalchemy.pool import NullPool
 
 # --- 2. CONFIGURATION ---
 basedir = os.path.abspath(os.path.dirname(__file__))
+
+# Standard Flask expects "templates" (plural). Ensure your folder is named 'templates'
 template_dir = os.path.join(basedir, 'template')
 static_dir = os.path.join(basedir, 'static')
 instance_path = os.path.join(basedir, 'instance')
@@ -45,17 +47,25 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 
-# --- 4. LOAD MODEL ---
+# --- 4. LAZY LOAD MODEL (MEMORY FIX) ---
+# We do NOT load the model here. We load it inside a function only when needed.
 model_path = os.path.join(basedir, 'asl_model_az.h5')
 model = None
-try:
-    if os.path.exists(model_path):
-        model = load_model(model_path)
-        print("✅ Model loaded successfully!")
-    else:
-        print(f"❌ Model not found at: {model_path}")
-except Exception as e:
-    print(f"❌ Error loading model: {e}")
+
+def get_model():
+    """Loads the model only when required to save RAM on startup."""
+    global model
+    if model is None:
+        try:
+            if os.path.exists(model_path):
+                print("--> ⏳ Loading model into memory (First Request)...")
+                model = load_model(model_path)
+                print("--> ✅ Model loaded successfully!")
+            else:
+                print(f"--> ❌ Model not found at: {model_path}")
+        except Exception as e:
+            print(f"--> ❌ Error loading model: {e}")
+    return model
 
 labels = {i: chr(65 + i) for i in range(26)}
 
@@ -140,7 +150,12 @@ def get_history():
 # --- 7. SOCKET IO ---
 @socketio.on('image_frame')
 def handle_image(data):
-    if not model: return
+    # LAZY LOAD: Check if model is loaded. If not, load it now.
+    active_model = get_model()
+    
+    # If model failed to load, stop here
+    if not active_model: return
+
     try:
         image_data = base64.b64decode(data.split(',')[1])
         nparr = np.frombuffer(image_data, np.uint8)
@@ -150,7 +165,9 @@ def handle_image(data):
         resized = cv2.resize(frame, (64, 64))
         normalized = resized / 255.0
         reshaped = np.reshape(normalized, (1, 64, 64, 3))
-        prediction = model.predict(reshaped, verbose=0)
+        
+        # Use active_model (not the global variable directly)
+        prediction = active_model.predict(reshaped, verbose=0)
         predicted_index = np.argmax(prediction)
         confidence = float(np.max(prediction))
         predicted_char = labels[predicted_index]
