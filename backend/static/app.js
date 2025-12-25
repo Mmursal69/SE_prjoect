@@ -28,21 +28,35 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- VIDEO PROCESSING LOOP ---
+    // --- VIDEO PROCESSING LOOP ---
+    // Optimization: Create a tiny canvas once for resizing
+    const smallCanvas = document.createElement('canvas');
+    smallCanvas.width = 64;  // The exact size the AI needs
+    smallCanvas.height = 64;
+    const smallCtx = smallCanvas.getContext('2d');
+
     setInterval(() => {
         // ONLY send a frame if we are not waiting for the last one!
         if (!isTextToSignMode && video && context && !isProcessing) {
             
-            isProcessing = true; // 🔴 LOCK: Stop sending
+            isProcessing = true; // 🔴 LOCK
             
+            // 1. Draw large video for the user to see
             context.drawImage(video, 0, 0, 640, 480);
-            // Compress image quality to 0.5 to reduce packet size
-            const data = canvas.toDataURL('image/jpeg', 0.5); 
+            
+            // 2. Draw tiny video for the AI (Massive Speedup!)
+            smallCtx.drawImage(video, 0, 0, 64, 64);
+            
+            // 3. Convert ONLY the tiny image to base64
+            // Quality 0.7 is plenty for AI
+            const data = smallCanvas.toDataURL('image/jpeg', 0.7); 
+            
             socket.emit('image_frame', data);
             
-            // Safety release: If server doesn't reply in 2 seconds, unlock anyway
+            // Safety release
             setTimeout(() => { isProcessing = false; }, 2000);
         }
-    }, 100); // Check every 100ms, but only send if unlocked
+    }, 100);
 
     // --- SOCKET LISTENERS ---
     socket.on('prediction_result', (data) => {
@@ -230,3 +244,4 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
+
