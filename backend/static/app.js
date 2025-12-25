@@ -1,4 +1,3 @@
-// Wait for the HTML to load before running ANY JavaScript
 document.addEventListener('DOMContentLoaded', () => {
     
     const socket = io();
@@ -8,6 +7,10 @@ document.addEventListener('DOMContentLoaded', () => {
     let predictionCount = 0;
     const STABILITY_THRESHOLD = 5; 
     let isTextToSignMode = false;
+    
+    // --- CRITICAL FIX: FLOW CONTROL ---
+    // This flag prevents the browser from spamming the server
+    let isProcessing = false; 
 
     // --- DOM ELEMENTS ---
     const video = document.getElementById('video');
@@ -18,7 +21,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const outputText = document.getElementById('output_text');
 
     // --- CAMERA SETUP ---
-    // Only request camera if the video element exists
     if (video) {
         navigator.mediaDevices.getUserMedia({ video: true })
             .then(stream => { video.srcObject = stream; })
@@ -27,15 +29,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- VIDEO PROCESSING LOOP ---
     setInterval(() => {
-        if (!isTextToSignMode && video && context) {
+        // ONLY send a frame if we are not waiting for the last one!
+        if (!isTextToSignMode && video && context && !isProcessing) {
+            
+            isProcessing = true; // 🔴 LOCK: Stop sending
+            
             context.drawImage(video, 0, 0, 640, 480);
-            const data = canvas.toDataURL('image/jpeg', 0.5);
+            // Compress image quality to 0.5 to reduce packet size
+            const data = canvas.toDataURL('image/jpeg', 0.5); 
             socket.emit('image_frame', data);
+            
+            // Safety release: If server doesn't reply in 2 seconds, unlock anyway
+            setTimeout(() => { isProcessing = false; }, 2000);
         }
-    }, 200); 
+    }, 100); // Check every 100ms, but only send if unlocked
 
     // --- SOCKET LISTENERS ---
     socket.on('prediction_result', (data) => {
+        
+        isProcessing = false; // 🟢 UNLOCK: Server is ready for next frame
+        
         const char = data.char;
         
         if (char === currentPrediction) {
@@ -64,14 +77,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // --- UI INTERACTIONS ---
-    
-    // Safety check function to add listener only if element exists
     function addListener(id, event, handler) {
         const el = document.getElementById(id);
         if (el) el.addEventListener(event, handler);
     }
 
-    // 1. Sentence Builder Buttons
     addListener('btn-space', 'click', () => { if(outputText) outputText.value += " "; });
     addListener('btn-backspace', 'click', () => { if(outputText) outputText.value = outputText.value.slice(0, -1); });
     addListener('btn-clear', 'click', () => { if(outputText) outputText.value = ""; });
@@ -82,7 +92,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // 2. Mode Switching
     addListener('btn-mode-sign2text', 'click', function() {
         isTextToSignMode = false;
         this.classList.add('active', 'btn-primary');
@@ -113,7 +122,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if(t2s) t2s.style.display = 'block';
     });
 
-    // 3. Text to Sign Logic
     addListener('btn-visual-play', 'click', async () => {
         const inputEl = document.getElementById('text-input');
         if(!inputEl) return;
@@ -125,7 +133,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if(displayImg && displayLetter) {
             for (let char of text) {
                 displayLetter.innerText = char;
-                // Using lowercase path fix we discussed
                 displayImg.src = `/static/images/${char.toLowerCase()}.png`;
                 await new Promise(r => setTimeout(r, 800)); 
             }
@@ -133,7 +140,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // 4. Reference Grid Population
     const referenceGrid = document.getElementById('reference-grid');
     if (referenceGrid) {
         const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -152,16 +158,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // 5. Auth & History
     const loginForm = document.getElementById('login-form');
     if (loginForm) {
         loginForm.onsubmit = async (e) => {
-            e.preventDefault(); // STOP THE RELOAD
-            console.log("Submitting Login..."); // Debug log
-            
+            e.preventDefault();
             const formData = new FormData(e.target);
             const data = Object.fromEntries(formData.entries());
-            
             try {
                 const res = await fetch('/login', {
                     method: 'POST',
@@ -174,21 +176,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     const err = document.getElementById('login-error');
                     if(err) err.innerText = result.message;
                 }
-            } catch (err) {
-                console.error("Login Fetch Error:", err);
-            }
+            } catch (err) { console.error(err); }
         };
     }
 
     const signupForm = document.getElementById('signup-form');
     if (signupForm) {
         signupForm.onsubmit = async (e) => {
-            e.preventDefault(); // STOP THE RELOAD
-            console.log("Submitting Signup..."); // Debug log
-
+            e.preventDefault();
             const formData = new FormData(e.target);
             const data = Object.fromEntries(formData.entries());
-            
             try {
                 const res = await fetch('/signup', {
                     method: 'POST',
@@ -201,9 +198,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const err = document.getElementById('signup-error');
                     if(err) err.innerText = result.message;
                 }
-            } catch (err) {
-                console.error("Signup Fetch Error:", err);
-            }
+            } catch (err) { console.error(err); }
         };
     }
 
@@ -212,11 +207,9 @@ document.addEventListener('DOMContentLoaded', () => {
         location.reload();
     });
 
-    // Make global functions available to HTML onclicks
     window.saveToHistory = async (elementId, mode) => {
         const el = document.getElementById(elementId);
         if(!el || !el.value) return;
-        
         await fetch('/save_history', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
@@ -236,5 +229,4 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
     });
-
-}); // End of DOMContentLoaded
+});
