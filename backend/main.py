@@ -1,3 +1,7 @@
+# --- 1. CRITICAL: MONKEY PATCH FIRST ---
+import eventlet
+eventlet.monkey_patch()
+
 import os
 import sys
 import cv2
@@ -7,15 +11,12 @@ from flask import Flask, render_template, Response, request, jsonify
 from flask_socketio import SocketIO, emit
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
-# Note: Render uses 'tensorflow-cpu' but imports as 'tensorflow'
 from tensorflow.keras.models import load_model
+# IMPORT NULLPOOL TO FIX THE LOCK ERROR
+from sqlalchemy.pool import NullPool
 
-# --- 1. CONFIGURATION (UNIVERSAL PATHS) ---
-
-# Get the folder where THIS main.py file is running
-# On Render, this will automatically be /opt/render/project/src/backend
+# --- 2. CONFIGURATION ---
 basedir = os.path.abspath(os.path.dirname(__file__))
-
 template_dir = os.path.join(basedir, 'template')
 static_dir = os.path.join(basedir, 'static')
 instance_path = os.path.join(basedir, 'instance')
@@ -23,26 +24,28 @@ instance_path = os.path.join(basedir, 'instance')
 print(f"--> Main.py running from: {basedir}")
 print(f"--> Templates expected at: {template_dir}")
 
-# Initialize Flask with explicit paths
-app = Flask(__name__, 
-            template_folder=template_dir, 
-            static_folder=static_dir)
+app = Flask(__name__, template_folder=template_dir, static_folder=static_dir)
 
-# Database Setup
 if not os.path.exists(instance_path):
     os.makedirs(instance_path)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(instance_path, 'database.db')
-app.config['SECRET_KEY'] = 'your_secret_key_here' 
+app.config['SECRET_KEY'] = 'your_secret_key_here'
 
-# --- 2. EXTENSIONS ---
+# --- THE FIX FOR "UN-ACQUIRED LOCK" ERROR ---
+# This disables connection pooling, which conflicts with Eventlet
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+    'poolclass': NullPool,
+}
+
+# --- 3. EXTENSIONS ---
 db = SQLAlchemy(app)
 socketio = SocketIO(app, cors_allowed_origins="*")
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 
-# --- 3. LOAD MODEL ---
+# --- 4. LOAD MODEL ---
 model_path = os.path.join(basedir, 'asl_model_az.h5')
 model = None
 try:
@@ -56,11 +59,11 @@ except Exception as e:
 
 labels = {i: chr(65 + i) for i in range(26)}
 
-# --- 4. DATABASE MODELS ---
+# --- 5. DATABASE MODELS ---
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(150), unique=True, nullable=False)
-    email = db.Column(db.String(150), unique=True, nullable=False) # Email is required now
+    email = db.Column(db.String(150), unique=True, nullable=False)
     password = db.Column(db.String(150), nullable=False)
     full_name = db.Column(db.String(150))
 
@@ -75,12 +78,11 @@ class History(db.Model):
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-# --- FORCE TABLE CREATION ---
+# Force table creation
 with app.app_context():
     db.create_all()
-    print("--> Database tables checked/created.")
 
-# --- 5. ROUTES ---
+# --- 6. ROUTES ---
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -99,8 +101,6 @@ def signup():
     data = request.json
     if User.query.filter_by(username=data.get('username')).first():
         return jsonify({"success": False, "message": "Username already exists"})
-    
-    # Check for email too
     if User.query.filter_by(email=data.get('email')).first():
         return jsonify({"success": False, "message": "Email already exists"})
         
@@ -137,7 +137,7 @@ def get_history():
     history_data = [{"date": h.timestamp.strftime('%Y-%m-%d %H:%M'), "mode": h.mode, "content": h.content} for h in history]
     return jsonify(history_data)
 
-# --- 6. SOCKET IO ---
+# --- 7. SOCKET IO ---
 @socketio.on('image_frame')
 def handle_image(data):
     if not model: return
@@ -161,4 +161,3 @@ def handle_image(data):
 
 if __name__ == '__main__':
     socketio.run(app, debug=True, host='0.0.0.0', port=5000)
-
