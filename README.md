@@ -1,20 +1,54 @@
-#Speak4me AI — Silent Voice to Speech
+.
+└── hand_speak_AI
+    ├── backend
+    │   ├── asl_model_az.h5
+    │   ├── instance
+    │   │   └── site.db
+    │   ├── main.py
+    │   └── requirements.txt
+    ├── frontend
+    │   ├── about.html
+    │   ├── app.js
+    │   ├── history.html
+    │   ├── images
+    │   │   ├── a.png
+    │   │   ├── b.png
+    │   │   ├── c.png
+    │   │   ├── d.png
+    │   │   ├── e.png
+    │   │   ├── f.png
+    │   │   ├── g.png
+    │   │   ├── h.png
+    │   │   ├── i.png
+    │   │   ├── j.png
+    │   │   ├── k.png
+    │   │   ├── l.png
+    │   │   ├── m.png
+    │   │   ├── n.png
+    │   │   ├── o.png
+    │   │   ├── p.png
+    │   │   ├── q.png
+    │   │   ├── r.png
+    │   │   ├── s.png
+    │   │   ├── t.png
+    │   │   ├── u.png
+    │   │   ├── v.png
+    │   │   ├── w.png
+    │   │   ├── x.png
+    │   │   ├── y.png
+    │   │   └── z.png
+    │   ├── index.html
+    │   ├── layout.html
+    │   ├── login.html
+    │   ├── settings.html
+    │   ├── styles.css
+    │   └── videos
+    │       ├── V1.mp4
+    │       ├── V2.mp4
+    │       ├── V3.mp4
+    │       ├── V4.mp4
+    │       ├── V5.mp4
+    │       └── V6.mp4
+    └── README.md
 
-[cite_start]**Speak4me AI** is a professional, responsive web application that translates American Sign Language (ASL) hand gestures into text and human-like speech in real-time[cite: 2].
-
-It uses a **TensorFlow/Keras** model for prediction and **MediaPipe** for hand tracking, wrapped in a **Flask** backend. [cite_start]The frontend uses the browser's native **Speech Synthesis API** to vocalize the detected sentences[cite: 5, 49].
-
-## 📂 Project Structure
-
-```text
-Speak4me-AI/
-├── backend/
-│   ├── main.py              # Flask server & Prediction logic
-│   ├── requirements.txt     # Python dependencies
-│   ├── Procfile             # Deployment command (for Render/Heroku)
-│   └── asl_model_az.h5      # ⚠️ YOUR TRAINED MODEL GOES HERE
-├── frontend/
-│   ├── index.html           # UI Structure
-│   ├── styles.css           # Navy-blue responsive theme
-│   └── app.js               # Webcam logic & Speech API
-└── README.md
+7 directories, 45 files
