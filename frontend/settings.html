@@ -1,0 +1,50 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white py-3">
+                <h4 class="mb-0 fw-bold"><i class="fas fa-cog me-2"></i>Application Settings</h4>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST">
+                    
+                    <h5 class="text-primary mb-3">AI Model Configuration</h5>
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Recognition Stability Threshold (Speed)</label>
+                        <p class="text-muted small">How long (in ms) you must hold a sign before it is accepted. Lower is faster but less accurate.</p>
+                        <div class="d-flex align-items-center gap-3">
+                            <span>Fast (500ms)</span>
+                            <input type="range" class="form-range" name="recognition_speed" min="500" max="3000" step="100" value="{{ current_user.recognition_speed }}">
+                            <span>Slow (3000ms)</span>
+                        </div>
+                        <div class="text-center mt-1 badge bg-light text-dark border">
+                            Current: {{ current_user.recognition_speed }}ms
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <h5 class="text-primary mb-3">Accessibility</h5>
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Text-to-Speech Talk Back Speed</label>
+                        <div class="d-flex align-items-center gap-3">
+                            <span>0.5x</span>
+                            <input type="range" class="form-range" name="voice_speed" min="0.5" max="2.0" step="0.1" value="{{ current_user.voice_speed }}">
+                            <span>2.0x</span>
+                        </div>
+                        <div class="text-center mt-1 badge bg-light text-dark border">
+                            Current: {{ current_user.voice_speed }}x
+                        </div>
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary py-2 fw-bold">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

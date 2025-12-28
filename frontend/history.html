@@ -1,0 +1,36 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold"><i class="fas fa-history me-2"></i>Translation History</h2>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="py-3 ps-4">Date & Time</th>
+                        <th class="py-3">Mode</th>
+                        <th class="py-3">Translated Content</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for entry in entries %}
+                    <tr>
+                        <td class="ps-4 text-muted">{{ entry.timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
+                        <td><span class="badge bg-secondary">{{ entry.mode }}</span></td>
+                        <td class="fw-bold text-dark">{{ entry.content }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="3" class="text-center py-5 text-muted">No history found. Start translating!</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,79 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container-fluid p-0 m-0 overflow-hidden">
+    <div class="row g-0" style="min-height: calc(100vh - 88px);"> 
+        
+        <div class="col-lg-8 col-xl-9 d-none d-lg-block position-relative bg-dark">
+            <video id="login-video-bg" autoplay muted loop class="w-100 h-100 object-fit-cover position-absolute top-0 start-0" style="object-fit: cover;">
+                </video>
+            <div class="position-absolute top-0 start-0 w-100 h-100 bg-dark opacity-25"></div>
+            <div class="position-absolute bottom-0 start-0 p-5 text-white">
+                <h1 class="display-4 fw-bold">Communication Made Easier</h1>
+                <p class="lead">communication for anyone, anywhere anytime</p>
+            </div>
+        </div>
+
+        <div class="col-12 col-lg-4 col-xl-3 d-flex flex-column bg-white shadow-lg">
+            
+            <div class="flex-grow-1 d-flex align-items-center p-4 p-md-5">
+                <div class="w-100">
+                    <h3 class="fw-bold text-primary mb-2">Welcome Back</h3>
+                    <p class="text-secondary mb-4 small">Please enter your details to sign in.</p>
+
+                    <ul class="nav nav-pills nav-fill mb-4 small" id="auth-tabs">
+                        <li class="nav-item">
+                            <a class="nav-link active" id="tab-login" href="#" onclick="switchAuth('login')">Login</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="tab-signup" href="#" onclick="switchAuth('signup')">Sign Up</a>
+                        </li>
+                    </ul>
+
+                    <form id="login-form">
+                        <div class="mb-3">
+                            <label class="form-label text-muted small fw-bold">USERNAME</label>
+                            <input type="text" name="username" class="form-control" placeholder="Enter username" required>
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label text-muted small fw-bold">PASSWORD</label>
+                            <input type="password" name="password" class="form-control" placeholder="••••••" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 py-2 fw-bold mb-3">Login to Account</button>
+                        <p id="login-error" class="text-danger mt-3 text-center small"></p>
+                    </form>
+
+                    <form id="signup-form" style="display: none;">
+                        <div class="mb-3">
+                            <label class="form-label text-muted small fw-bold">FULL NAME</label>
+                            <input type="text" name="full_name" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-muted small fw-bold">EMAIL</label>
+                            <input type="email" name="email" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-muted small fw-bold">USERNAME</label>
+                            <input type="text" name="username" class="form-control" required>
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label text-muted small fw-bold">PASSWORD</label>
+                            <input type="password" name="password" class="form-control" required>
+                        </div>
+                        <button type="submit" class="btn btn-success w-100 py-2 fw-bold">Create Account</button>
+                        <p id="signup-error" class="text-danger mt-3 text-center small"></p>
+                    </form>
+                </div>
+            </div>
+
+            <div class="p-3 bg-light border-top text-center">
+                <p class="mb-0 small text-muted" style="font-size: 0.75rem;">
+                    &copy; Hand Speak AI <span class="mx-2">|</span> 
+                    <a href="#" class="text-secondary text-decoration-none">Privacy</a>
+                </p>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,247 @@
+/* --- 1. Global & Theme Variables --- */
+:root {
+    /* USER PALETTE */
+    --bg-body: #9CC6DB;       /* Light Blue */
+    --bg-card: #FCF6D9;       /* Cream/Light Yellow */
+    --primary: #CF4B00;       /* Burnt Orange (Main Brand Color) */
+    --text-gold: #DDBA7D;     /* Gold (Used for Navbar/Footer text) */
+    
+    /* DERIVED & UTILITY COLORS */
+    --primary-hover: #A03A00; /* Darker Orange for hover states */
+    --text-main: #3E2723;     /* Dark Brown (High contrast on Cream) */
+    --text-muted: #6D4C41;    /* Lighter Brown */
+    
+    /* Custom Success Color (Dark Teal to match Retro Vibe) */
+    --success-custom: #2C7A7B; 
+    --success-hover: #235c5d;
+    
+    --danger-muted: #e53e3e;  
+}
+
+body {
+    font-family: 'Segoe UI', 'Roboto', Helvetica, Arial, sans-serif;
+    background-color: var(--bg-body);
+    color: var(--text-main);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+main {
+    flex: 1;
+}
+
+/* --- 2. Bootstrap Overrides --- */
+
+/* PRIMARY BUTTON (Login, Speak, Active Mode) -> BURNT ORANGE */
+.btn-primary {
+    background-color: var(--primary);
+    border-color: var(--primary);
+    color: white;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+.btn-primary:hover, .btn-primary:active, .btn-primary.active, .btn-primary:focus {
+    background-color: var(--primary-hover) !important;
+    border-color: var(--primary-hover) !important;
+    box-shadow: 0 4px 6px rgba(207, 75, 0, 0.25); /* Orange Glow */
+}
+
+/* OUTLINE PRIMARY (Inactive Mode) -> ORANGE TEXT + TRANSPARENT */
+.btn-outline-primary {
+    color: var(--primary);
+    border-color: var(--primary);
+    background-color: transparent;
+    font-weight: 600;
+}
+.btn-outline-primary:hover, .btn-outline-primary.active {
+    background-color: var(--primary) !important;
+    border-color: var(--primary) !important;
+    color: white !important;
+}
+
+/* SUCCESS BUTTON (Create Account) -> DARK TEAL */
+.btn-success {
+    background-color: var(--success-custom);
+    border-color: var(--success-custom);
+    font-weight: 600;
+}
+.btn-success:hover, .btn-success:active {
+    background-color: var(--success-hover) !important;
+    border-color: var(--success-hover) !important;
+}
+
+/* DANGER BUTTON (Clear/Logout) */
+.btn-danger { background-color: var(--danger-muted); border-color: var(--danger-muted); }
+
+/* Override Text Primary to use Orange */
+.text-primary { color: var(--primary) !important; }
+
+/* Navbar - Dark Background with Gold Text */
+.bg-dark {
+    background-color: #1a202c !important; /* Deep charcoal */
+}
+.navbar-dark .navbar-brand {
+    color: var(--text-gold) !important;
+}
+.navbar-dark .navbar-nav .nav-link {
+    color: rgba(255, 255, 255, 0.85); 
+}
+.navbar-dark .navbar-nav .nav-link:hover, 
+.navbar-dark .navbar-nav .nav-link.active {
+    color: var(--text-gold) !important; 
+}
+
+/* --- 3. Auth Page Styles --- */
+.auth-container {
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: var(--bg-body);
+}
+
+.auth-card {
+    background: var(--bg-card);
+    padding: 3rem;
+    border-radius: 12px; 
+    width: 100%;
+    max-width: 450px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1); 
+    border: 2px solid rgba(255,255,255,0.5); 
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+/* Auth Input Fields */
+.form-control {
+    background-color: #ffffff;
+    border: 1px solid #d1d5db;
+    color: var(--text-main);
+}
+.form-control:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 0.25rem rgba(207, 75, 0, 0.25); /* Orange focus ring */
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- 4. Dashboard Styles --- */
+.main-container { padding: 20px; }
+
+/* Dashboard Cards */
+.card {
+    background-color: var(--bg-card);
+    border: none;
+    color: var(--text-main);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+.card-header {
+    background-color: rgba(0,0,0,0.03); 
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+    color: var(--primary);
+    font-weight: bold;
+}
+
+/* Video Container */
+.video-wrapper {
+    position: relative;
+    width: 100%;
+    max-width: 480px; 
+    margin: 0 auto;   
+    background: #000;
+    aspect-ratio: 4/3;
+    overflow: hidden;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+#video { width: 100%; height: 100%; object-fit: cover; }
+
+/* Reference Grid */
+.reference-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+    gap: 12px;
+}
+
+/* GRID ITEM - UPDATED: WHITE BACKGROUND */
+.grid-item {
+    background: #ffffff; /* PURE WHITE as requested */
+    border: 1px solid rgba(0,0,0,0.1); 
+    border-radius: 8px;
+    padding: 10px;
+    text-align: center;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.grid-item:hover {
+    transform: translateY(-2px);
+    border-color: var(--primary);
+    box-shadow: 0 4px 8px rgba(207, 75, 0, 0.15);
+}
+
+.grid-item img {
+    max-width: 45px;
+    height: auto;
+    display: block;
+    margin: 0 auto 5px auto;
+}
+
+/* The Active Letter Highlight in Grid */
+.active-letter {
+    border: 2px solid var(--primary) !important; /* Orange border */
+    background-color: #ffffff !important;        
+    transform: scale(1.1);
+    box-shadow: 0 0 10px rgba(207, 75, 0, 0.4) !important;
+    z-index: 10;
+}
+
+#output_text { 
+    resize: none; 
+    font-family: 'Consolas', 'Monaco', monospace; 
+    background-color: #ffffff;
+    border: 1px solid #cbd5e0;
+    color: var(--text-main);
+}
+#output_text:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 0.25rem rgba(207, 75, 0, 0.15);
+}
+
+/* Scrollbar styling */
+.right-panel::-webkit-scrollbar { width: 8px; }
+.right-panel::-webkit-scrollbar-track { background: rgba(0,0,0,0.05); }
+.right-panel::-webkit-scrollbar-thumb {
+    background: var(--primary); 
+    border-radius: 4px;
+    opacity: 0.7;
+}
+.right-panel::-webkit-scrollbar-thumb:hover { background: var(--primary-hover); }
+
+/* --- 5. Login/Layout Specifics --- */
+#login-video-bg {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.navbar-nav .nav-link {
+    font-size: 1.1rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+}
+
+footer {
+    font-size: 0.85rem;
+    background-color: #1a202c !important; /* Dark footer */
+    color: var(--text-gold) !important;   /* Gold text in footer */
+}
+
+/* Stability Bar (Progress Bar) */
+#stability-bar {
+    background-color: var(--success-custom); /* Use Teal for stability */
+}
